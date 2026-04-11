@@ -1,0 +1,58 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>pt.tecnico.sdis.2025.T49</groupId>
+        <artifactId>TupleSpaces</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>FrontEnd</artifactId>
+    <packaging>jar</packaging>
+    <name>FrontEnd</name>
+
+    <properties>
+        <mainclass>pt.ulisboa.tecnico.tuplespaces.frontend.FrontEndMain</mainclass>
+        <origin.server.port>2001</origin.server.port>
+        <dest.server.hostport>localhost:3001</dest.server.hostport>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>pt.tecnico.sdis.2025.T49</groupId>
+            <artifactId>Contract</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>pt.tecnico.sdis.2025.T49</groupId>
+            <artifactId>Common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>${version.exec-maven-plugin}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <mainClass>${mainclass}</mainClass>
+                    <arguments>
+                        <argument>${origin.server.port}</argument>
+                        <argument>${dest.server.hostport}</argument>
+                    </arguments>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

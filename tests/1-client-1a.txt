@@ -1,0 +1,2 @@
+sleep 2
+take <a> 0 20 20

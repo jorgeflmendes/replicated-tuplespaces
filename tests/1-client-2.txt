@@ -1,0 +1,4 @@
+put <a>
+sleep 30
+getTupleStateSpaces
+put <a>

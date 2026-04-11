@@ -1,0 +1,6 @@
+sleep 7
+getTupleSpacesState
+sleep 10
+put <a>
+sleep 20
+getTupleSpacesState

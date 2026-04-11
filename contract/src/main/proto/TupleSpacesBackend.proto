@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package pt.ulisboa.tecnico.tuplespaces.centralized.contract;
+
+message PutBackendRequest {
+  string newTuple = 1;
+  int32 clientId = 2;
+  string operationId = 3;
+}
+
+message PutBackendResponse {
+}
+
+message ReadBackendRequest {
+  string searchPattern = 1;
+  int32 clientId = 2;
+  string operationId = 3;
+}
+
+message ReadBackendResponse {
+  string result = 1;
+}
+
+message EnterBackendRequest {
+  string pattern = 1;
+  int32 clientId  = 2;
+  string operationId = 3;
+}
+
+message EnterBackendResponse {
+  repeated string tuple = 1;
+}
+
+message TakeBackendRequest {
+  string tuple = 1;
+  int32 clientId = 2;
+  string operationId = 3;
+  bool isVoter = 4;
+}
+
+message TakeBackendResponse {
+}
+
+message ExitBackendRequest {
+  int32 clientId  = 1;
+  string operationId = 2;
+}
+
+message ExitBackendResponse {
+}
+
+message getTupleSpacesStateBackendRequest {
+  int32 clientId  = 1;
+  string operationId = 2;
+}
+
+message getTupleSpacesStateBackendResponse {
+  repeated string tuple = 1;
+}
+
+service TupleSpacesBackend {
+  rpc putBackend(PutBackendRequest) returns (PutBackendResponse);
+  rpc readBackend(ReadBackendRequest) returns (ReadBackendResponse);
+  rpc EnterBackend(EnterBackendRequest) returns (EnterBackendResponse);
+  rpc takeBackend(TakeBackendRequest) returns (TakeBackendResponse);
+  rpc ExitBackend(ExitBackendRequest) returns (ExitBackendResponse);
+  rpc getTupleSpacesStateBackend(getTupleSpacesStateBackendRequest) returns (getTupleSpacesStateBackendResponse);
+}
