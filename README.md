@@ -1,194 +1,166 @@
-# TupleSpaces
+# Replicated TupleSpaces
 
-[![Java](https://img.shields.io/badge/Java-17-informational?logo=openjdk)](https://openjdk.org/)
-[![Maven](https://img.shields.io/badge/Build-Maven%203.8%2B-blue?logo=apachemaven)](https://maven.apache.org/)
-[![gRPC](https://img.shields.io/badge/RPC-gRPC-00bfa5?logo=grpc)](https://grpc.io/)
-[![CI](https://img.shields.io/badge/CI-GitHub_Actions-black?logo=githubactions)](.github/workflows/ci.yml)
+> A Linda-style coordination service with replicated storage and quorum-coordinated distributed operations.
 
-Distributed Systems course project for Instituto Superior Tecnico (IST), focused on a replicated TupleSpaces implementation built with Java, gRPC, and a complementary Python client.
+[![Java 17](https://img.shields.io/badge/Java-17-blue)](https://openjdk.org/)
+[![gRPC](https://img.shields.io/badge/RPC-gRPC-00bfa5)](https://grpc.io/)
+[![CI](https://github.com/jorgeflmendes/replicated-tuplespaces/actions/workflows/ci.yml/badge.svg)](https://github.com/jorgeflmendes/replicated-tuplespaces/actions/workflows/ci.yml)
 
-`distributed-systems`, `tuplespaces`, `grpc`, `protobuf`, `java`, `python`, `maven`, `ist`, `tecnico-lisboa`
+Replicated TupleSpaces implements a distributed coordination service with Java,
+gRPC, Protocol Buffers, and a complementary Python client. It exposes blocking
+Linda-style tuple operations and coordinates distributed `take` requests
+through intersecting voter sets inspired by Maekawa's mutual exclusion
+algorithm.
 
 ## Overview
 
-This repository is organized as a multi-module Maven project with clear separation between API contracts, shared logic, backend services, and client applications. The system exposes a Linda-style TupleSpaces API and coordinates distributed `take` operations through a quorum-based approach inspired by Maekawa's mutual exclusion algorithm.
+Clients interact with a front-end service that orchestrates multiple backend
+replicas. `put` distributes tuples, `read` waits for a matching value, and
+`take` coordinates selection and removal across replicas. Tuple patterns are
+expressed as Java-compatible regular expressions.
 
-### Key capabilities
+The project demonstrates RPC contract design, replicated state, concurrency,
+blocking operations, quorum coordination, and multi-module service
+organization.
 
-- TupleSpaces API defined with Protocol Buffers and gRPC.
-- Support for `put`, `read`, `take`, and `getTupleSpacesState`.
-- Pattern-based tuple matching for blocking `read` and coordinated `take`.
-- Replicated backend coordination through a Maekawa-style voter set strategy.
-- Java server and front-end services structured as independent modules.
-- Java and Python command-line clients for interacting with the system.
-- Deterministic build pipeline with GitHub Actions CI.
+## Academic Context
 
-## Distributed Model
+This project was developed as part of the **Distributed Systems** course unit
+at **Instituto Superior Técnico, University of Lisbon**.
 
-The runtime is split between a client-facing front-end and multiple backend replicas:
+This project explores replicated coordination services, concurrency,
+consistency, fault tolerance, and distributed communication.
 
-- The `front-end` receives client operations and orchestrates replica communication.
-- The `single-server` module implements the backend state machine used by each replica.
-- `put` is broadcast to all replicas.
-- `read` waits until at least one replica returns a matching tuple.
-- `take` is executed in two phases:
-  phase 1 collects candidate tuples from a voter set;
-  phase 2 removes the chosen tuple from all replicas.
+## Key Features
 
-For `take`, the front-end computes a voter set and intersects the tuples returned by those replicas before selecting the tuple to remove. This is the core of the repository's Maekawa-style coordination approach.
+- `put`, `read`, `take`, and `getTupleSpacesState` operations
+- Protocol Buffer API contracts and generated gRPC bindings
+- Java backend replicas and coordinating front-end
+- Blocking pattern-based reads and takes
+- Maekawa-style voter sets for distributed `take`
+- Java and Python command-line clients
+- Multi-module Maven build
 
-## Tuple Semantics
-
-The system works over string tuples such as:
-
-```text
-<hello,world>
-<user,42,active>
-<order,123,pending>
-```
-
-Supported operations:
-
-- `put` inserts a tuple into the replicated tuple space.
-- `read` blocks until a matching tuple is available.
-- `take` blocks until a tuple can be safely selected and removed.
-- `getTupleSpacesState` returns the current visible tuple collections from the replicas.
-
-### Pattern matching
-
-Tuple matching is pattern-based. Internally, tuple selection relies on Java string pattern matching (`String.matches(...)`), so search expressions can be used to describe classes of tuples rather than only exact values.
-
-Examples:
+## Architecture
 
 ```text
-read <hello,world>
-read <user,.*>
-take <order,.*,pending>
+Java/Python clients
+        |
+        v
+  Front-end service
+   |      |      |
+   v      v      v
+Replica  Replica  Replica
 ```
 
-This allows the tuple space to support both exact tuple access and more expressive searches over structured tuple strings.
+For `take`, the front-end requests candidates from a voter set, intersects the
+returned tuple sets, selects a common tuple, and asks all replicas to remove
+it. Replica-side operation identifiers and pattern locks prevent incompatible
+concurrent selections.
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the component and request
+flow in more detail.
+
+## Tech Stack
+
+- Java 17
+- Maven 3.8+
+- gRPC and Protocol Buffers
+- Python 3.10+ client
+- GitHub Actions
 
 ## Repository Structure
 
 ```text
 .
-|-- contract/        # Protobuf definitions and generated gRPC artifacts
-|-- common/          # Shared Java utilities and operation coordination primitives
-|-- client-java/     # Java command-line client
-|-- client-python/   # Python command-line client package and compatibility entrypoints
-|-- single-server/   # TupleSpaces backend server
-|-- front-end/       # Front-end aggregation and coordination layer
-|-- docs/            # Architecture and developer documentation
-|-- tests/           # Command script samples used during manual validation
-`-- .github/         # CI workflow, templates, and collaboration metadata
+|-- contract/              # Protobuf contracts and generated bindings
+|-- common/                # Shared coordination primitives
+|-- single-server/         # TupleSpaces backend replica
+|-- front-end/             # Client-facing coordination service
+|-- client-java/           # Java CLI
+|-- client-python/         # Python CLI
+|-- docs/                  # Architecture documentation
+`-- pom.xml                # Multi-module build
 ```
 
-## Architecture
+## Getting Started
 
-The system is split into five primary components:
-
-1. `contract`
-   Contains the protobuf service definitions and code generation pipeline for Java and Python.
-2. `common`
-   Holds shared Java abstractions used across runtime services.
-3. `single-server`
-   Implements the TupleSpaces backend state and request handling logic.
-4. `front-end`
-   Exposes the client-facing service and orchestrates backend communication.
-5. `client-java` and `client-python`
-   Provide interactive command-line interfaces for submitting operations.
-
-More detail is available in [docs/ARCHITECTURE.md](/C:/Users/Jorge/Downloads/T49-Tuplespaces-2025-master/T49-Tuplespaces-2025-master/docs/ARCHITECTURE.md).
-
-### Coordination details
-
-- The front-end generates an operation identifier for every request.
-- Backend replicas track pending operations and local locking state.
-- Pattern locks prevent conflicting `take` requests from choosing incompatible tuples concurrently.
-- The front-end only finalizes a `take` after it finds a non-empty intersection across the voter responses.
-
-## Prerequisites
-
-- Java 17
-- Maven 3.8+
-- Python 3.10+ for the Python client
-
-Check your environment with:
+Prerequisites: Java 17, Maven 3.8+, and Python 3.10+ for the Python client.
 
 ```bash
-javac -version
-mvn -version
-python --version
-```
-
-## Build
-
-Compile all Java modules and generate the gRPC artifacts:
-
-```bash
+git clone https://github.com/jorgeflmendes/replicated-tuplespaces.git
+cd replicated-tuplespaces
 mvn clean install
 ```
 
-Run the verification pipeline:
-
-```bash
-mvn test
-```
-
-## Running the System
-
-### Start the backend server
+Start three backend replicas in separate terminals:
 
 ```bash
 cd single-server
 mvn exec:java -Dexec.args="3001"
 ```
 
-### Start the front-end
+Repeat with ports `3002` and `3003`, then start the front-end:
 
 ```bash
 cd front-end
 mvn exec:java -Dexec.args="2001 localhost:3001 localhost:3002 localhost:3003"
 ```
 
-### Run the Java client
+Start the Java client:
 
 ```bash
 cd client-java
 mvn exec:java -Dexec.args="localhost:2001 1"
 ```
 
-### Run the Python client
-
-Install dependencies:
+Or install and run the Python client:
 
 ```bash
 python -m pip install -r client-python/requirements.txt
-```
-
-Run the client:
-
-```bash
 python client-python/client_main.py localhost:2001 1
 ```
 
-## Command Examples
+Example commands:
 
 ```text
-put <hello,world>
-read <hello,world>
-take <hello,world>
+put <user,42,active>
+read <user,.*>
+take <user,.*,active>
 getTupleSpacesState
-sleep 2
-exit
 ```
 
-## Documentation
+## Running Tests
 
-- [Architecture Notes](/C:/Users/Jorge/Downloads/T49-Tuplespaces-2025-master/T49-Tuplespaces-2025-master/docs/ARCHITECTURE.md)
+```bash
+mvn test
+```
+
+GitHub Actions compiles and tests the Maven reactor on pushes and pull requests.
+The repository also contains command-script samples under `tests/` for manual
+multi-process validation.
+
+## Limitations
+
+- The implementation is an academic prototype, not a production coordination service.
+- Failure recovery and durable replica storage are outside the current scope.
+- Pattern matching follows Java `String.matches(...)` semantics.
+- End-to-end distributed scenarios still require manual multi-process startup.
+
+## Roadmap
+
+- Add automated multi-replica integration tests
+- Document consistency and failure guarantees explicitly
+- Add deterministic fault-injection scenarios
+- Package local cluster startup with containers
+
+## Usage Note
+
+No standalone repository license is currently included. The implementation and
+upstream course materials should not be redistributed or reused without
+reviewing the applicable terms.
 
 ## References
 
-- [Distributed Systems Project Statement](https://github.com/tecnico-distsys/Tuplespaces-2025)
-- [gRPC Documentation](https://grpc.io/docs/)
-- [Apache Maven](https://maven.apache.org/)
+- [Distributed Systems project](https://github.com/tecnico-distsys/Tuplespaces-2025)
+- [gRPC documentation](https://grpc.io/docs/)
