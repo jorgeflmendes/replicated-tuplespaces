@@ -43,14 +43,18 @@ consistency, fault tolerance, and distributed communication.
 
 ## Architecture
 
-```text
-Java/Python clients
-        |
-        v
-  Front-end service
-   |      |      |
-   v      v      v
-Replica  Replica  Replica
+```mermaid
+flowchart LR
+    CLIENTS["Java / Python clients"] --> FRONT["Front-end service"]
+    FRONT --> CONTRACT["gRPC contract"]
+    CONTRACT --> R1["Backend replica"]
+    CONTRACT --> R2["Backend replica"]
+    CONTRACT --> R3["Backend replica"]
+
+    FRONT --> VOTERS["Maekawa-style voter sets"]
+    VOTERS --> R1
+    VOTERS --> R2
+    VOTERS --> R3
 ```
 
 For `take`, the front-end requests candidates from a voter set, intersects the
